@@ -24,6 +24,14 @@
     const canvas = document.getElementById('fireworkCanvas');
     const ctx = canvas.getContext('2d');
 
+    // 祝福语数组
+    const blessingPhrases = ["萬事顺意", "百事可乐", "可可爱爱", "心想柿成", "爱你"];
+
+    // 获取随机祝福语
+    function getRandomBlessing() {
+        return blessingPhrases[Math.floor(Math.random() * blessingPhrases.length)];
+    }
+
     // 调整画布大小
     function resizeCanvas() {
         canvas.width = window.innerWidth;
@@ -300,7 +308,7 @@
         const numParticles = 100;
         const size = 1;
         const addText = true;
-        const textContent = '爱你';
+        const textContent = getRandomBlessing(); // 随机选择祝福语
 
         const fw = new Firework(clickX, clickY, targetY, shape, fireworkColor, numParticles, size, addText, textContent);
         fireworks.push(fw);
@@ -314,16 +322,14 @@
 
     // 自动释放烟花
     function autoFireworks() {
-        // const x = Math.random() * canvas.width;
-        // const y = canvas.height; // 从底部开始
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
         const targetY = Math.random() * canvas.height / 2; // 目标高度
         const numParticles = window.innerWidth < 768 ? 30 + Math.floor(Math.random() * 70) : 50 + Math.floor(Math.random() * 100); // 粒子数量基于设备
         const size = 0.5 + Math.random() * 1.5;
         const color = null; // 随机颜色
-        const addText = Math.random() < 0; // 30%概率添加文本
-        const textContent = '爱你';
+        const addText = Math.random() < 0.0; // 30%概率添加文本
+        const textContent = addText ? getRandomBlessing() : '爱你'; // 如果添加文本，随机选择祝福语；否则默认“爱你”
 
         // 随机选择形状
         const shapes = ['heart', 'star', 'flower'];
@@ -331,16 +337,22 @@
 
         const fw = new Firework(x, y, targetY, shape, color, numParticles, size, addText, textContent);
         fireworks.push(fw);
+
+        // 可选：播放声音
+        // if (fireworkSound) {
+        //     fireworkSound.currentTime = 0;
+        //     fireworkSound.play();
+        // }
     }
 
     // 设置自动释放的时间间隔
-    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 2000 : 1000; // 移动设备每3秒，桌面每1秒
+    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 3000 : 1000; // 移动设备每3秒，桌面每1秒
     let autoFireworksInterval = setInterval(autoFireworks, FIREWORK_INTERVAL);
 
     // 监听窗口大小变化，动态调整自动释放间隔
     window.addEventListener('resize', function() {
         clearInterval(autoFireworksInterval);
-        const newInterval = window.innerWidth < 768 ? 2000 : 500;
+        const newInterval = window.innerWidth < 768 ? 3000 : 1000;
         autoFireworksInterval = setInterval(autoFireworks, newInterval);
     });
 
