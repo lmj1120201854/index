@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Happy 2025 爱你爱我</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="fireworkCanvas"></canvas>
+<!-- 可选：添加音频元素 -->
+<!-- <audio id="fireworkSound" src="firework.mp3" preload="auto"></audio> -->
+
+<script>
+    const canvas = document.getElementById('fireworkCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 调整画布大小
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // 粒子类
+    class Particle {
+        constructor(x, y, angle, speed, color, size, gravity = 0.02, fade = 0.02) {
+            this.x = x;
+            this.y = y;
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+            this.alpha = 1;
+            this.color = color;
+            this.size = size;
+            this.gravity = gravity;
+            this.fade = fade;
+        }
+
+        update() {
+            this.vy += this.gravity;
+            this.x += this.vx;
+            this.y += this.vy;
+            this.alpha -= this.fade;
+        }
+
+        draw(ctx) {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // 文本元素类
+    class TextElement {
+        constructor(x, y, text, fontSize = 30, color = 'red', fadeRate = 0.02) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.fontSize = fontSize;
+            this.color = color;
+            this.alpha = 1;
+            this.fadeRate = fadeRate;
+        }
+
+        update() {
+            this.alpha -= this.fadeRate;
+        }
+
+        draw(ctx) {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.fillStyle = this.color;
+            // 使用支持中文的字体，如“微软雅黑”或“宋体”
+            ctx.font = `${this.fontSize}px '微软雅黑', 'Arial'`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.restore();
+        }
+    }
+
+    // 火箭类
+    class Firework {
+        constructor(x, y, targetY, color, numParticles, size, addText, textContent) {
+            this.x = x;
+            this.y = y;
+            this.targetY = targetY; // 爆炸高度
+            this.vy = -Math.random() * 3 - 2; // 上升速度
+            this.color = color;
+            this.isExploded = false;
+            this.numParticles = numParticles;
+            this.size = size;
+            this.addText = addText;
+            this.textContent = textContent;
+            this.trail = []; // 存储火箭的轨迹
+            this.maxTrail = 5; // 轨迹长度
+        }
+
+        update() {
+            if (!this.isExploded) {
+                this.vy += 0.05; // 模拟重力
+                this.y += this.vy;
+
+                // 添加轨迹
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > this.maxTrail) {
+                    this.trail.shift();
+                }
+
+                // 判断是否到达目标高度
+                if (this.vy >= 0 || this.y <= this.targetY) {
+                    this.explode();
+                }
+            }
+        }
+
+        explode() {
+            this.isExploded = true;
+            createHeartFirework(
+                this.x,
+                this.y,
+                this.numParticles,
+                this.size,
+                this.color,
+                this.addText,
+                this.textContent
+            );
+        }
+
+        draw(ctx) {
+            if (!this.isExploded) {
+                // 绘制轨迹
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                ctx.strokeStyle = this.color;
+                ctx.beginPath();
+                for (let i = 0; i < this.trail.length - 1; i++) {
+                    ctx.moveTo(this.trail[i].x, this.trail[i].y);
+                    ctx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
+                }
+                ctx.stroke();
+                ctx.restore();
+
+                // 绘制火箭
+                ctx.save();
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+    }
+
+    // 文本元素数组
+    const textElements = [];
+
+    // 粒子数组
+    const particles = [];
+
+    // 火箭数组
+    const fireworks = [];
+
+    // 生成正立心形路径的角度和距离
+    function generateHeartAngles(num, size = 1) {
+        const angles = [];
+        for (let i = 0; i < num; i++) {
+            const t = Math.PI - (i / num) * (2 * Math.PI);
+            // 标准心形方程
+            let x = 16 * Math.pow(Math.sin(t), 3);
+            let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            
+            // 旋转心形90度，使其正立
+            const rotatedX = x;
+            const rotatedY = -y;
+            
+            const angle = Math.atan2(rotatedY, rotatedX);
+            const distance = Math.sqrt(rotatedX * rotatedX + rotatedY * rotatedY) * size;
+            angles.push({ angle: angle, distance: distance });
+        }
+        return angles;
+    }
+
+    /**
+     * 生成并添加一个心型烟花
+     * @param {number} x - 烟花中心的x坐标
+     * @param {number} y - 烟花中心的y坐标
+     * @param {number} numParticles - 粒子数量
+     * @param {number} size - 心形大小
+     * @param {string|null} color - 粒子颜色。若为null，则随机颜色
+     * @param {boolean} addText - 是否在烟花中心添加文本
+     * @param {string} [textContent='爱你'] - 文本内容（默认“爱你”）
+     */
+    function createHeartFirework(x, y, numParticles = 100, size = 1, color = null, addText = false, textContent = '爱你') {
+        const heartAngles = generateHeartAngles(numParticles, size);
+        // 若未指定颜色，则随机生成
+        const fireworkColor = color || `hsl(${Math.random() * 360}, 100%, 50%)`;
+
+        heartAngles.forEach(({ angle, distance }) => {
+            const speed = distance * 0.1; // 调整速度因子以适应大小变化
+            const p = new Particle(
+                x,
+                y,
+                angle,
+                speed,
+                fireworkColor,
+                2 + Math.random() * 2, // 随机粒子大小
+                0.02 + Math.random() * 0.01, // 随机重力
+                0.005 + Math.random() * 0.015 // 随机衰减速度
+            );
+            particles.push(p);
+        });
+
+        // 如果需要添加文本元素
+        if (addText) {
+            const text = new TextElement(x, y, textContent, 40, 'red', 0.02); // 增大字体大小以适应中文
+            textElements.push(text);
+        }
+    }
+
+    // 可选：引用音频元素
+    // const fireworkSound = document.getElementById('fireworkSound');
+
+    // 点击事件
+    canvas.addEventListener('click', function(event) {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+
+        // 创建一个火箭，目标高度为随机高度的下方（模拟从底部升起）
+        const targetY = clickY - (Math.random() * canvas.height / 2 + canvas.height / 4);
+        const fireworkColor = 'red'; // 可自定义颜色
+        const numParticles = 100;
+        const size = 1;
+        const addText = true;
+        const textContent = '爱你';
+
+        const fw = new Firework(clickX, clickY, targetY, fireworkColor, numParticles, size, addText, textContent);
+        fireworks.push(fw);
+
+        // 可选：播放声音
+        // if (fireworkSound) {
+        //     fireworkSound.currentTime = 0;
+        //     fireworkSound.play();
+        // }
+    });
+
+    // 自动释放烟花
+    function autoFireworks() {
+        // const x = Math.random() * canvas.width * 0.8 + canvas.width * 0.1; // 避免边缘过近
+        // const y = canvas.height; // 从底部开始
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const targetY = Math.random(); // 目标高度
+        const numParticles = window.innerWidth < 768 ? 30 + Math.floor(Math.random() * 70) : 50 + Math.floor(Math.random() * 100); // 粒子数量基于设备
+        const size = 0.5 + Math.random() * 1.5;
+        const color = null; // 随机颜色
+        const addText = 0; // 30%概率添加文本
+        const textContent = '';
+
+        const fw = new Firework(x, y, targetY, color, numParticles, size, addText, textContent);
+        fireworks.push(fw);
+    }
+
+    // 设置自动释放的时间间隔
+    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 3000 : 1000; // 移动设备每3秒，桌面每1秒
+    let autoFireworksInterval = setInterval(autoFireworks, FIREWORK_INTERVAL);
+
+    // 监听窗口大小变化，动态调整自动释放间隔
+    window.addEventListener('resize', function() {
+        clearInterval(autoFireworksInterval);
+        const newInterval = window.innerWidth < 768 ? 3000 : 1000;
+        autoFireworksInterval = setInterval(autoFireworks, newInterval);
+    });
+
+    // 动画循环
+    function animate() {
+        // 使用半透明黑色填充实现拖影效果
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 更新并绘制火箭
+        for (let i = fireworks.length - 1; i >= 0; i--) {
+            const fw = fireworks[i];
+            fw.update();
+            fw.draw(ctx);
+            if (fw.isExploded) {
+                fireworks.splice(i, 1);
+            }
+        }
+
+        // 更新并绘制粒子
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.update();
+            p.draw(ctx);
+            if (p.alpha <= 0) {
+                particles.splice(i, 1);
+            }
+        }
+
+        // 更新并绘制文本元素
+        for (let i = textElements.length - 1; i >= 0; i--) {
+            const text = textElements[i];
+            text.update();
+            text.draw(ctx);
+            if (text.alpha <= 0) {
+                textElements.splice(i, 1);
+            }
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
