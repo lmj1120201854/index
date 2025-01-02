@@ -93,8 +93,87 @@
         }
     }
 
+    // 火箭类
+    class Firework {
+        constructor(x, y, targetY, color, numParticles, size, addText, textContent) {
+            this.x = x;
+            this.y = y;
+            this.targetY = targetY; // 爆炸高度
+            this.vy = -Math.random() * 3 - 2; // 上升速度
+            this.color = color;
+            this.isExploded = false;
+            this.numParticles = numParticles;
+            this.size = size;
+            this.addText = addText;
+            this.textContent = textContent;
+            this.trail = []; // 存储火箭的轨迹
+            this.maxTrail = 5; // 轨迹长度
+        }
+
+        update() {
+            if (!this.isExploded) {
+                this.vy += 0.05; // 模拟重力
+                this.y += this.vy;
+
+                // 添加轨迹
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > this.maxTrail) {
+                    this.trail.shift();
+                }
+
+                // 判断是否到达目标高度
+                if (this.vy >= 0 || this.y <= this.targetY) {
+                    this.explode();
+                }
+            }
+        }
+
+        explode() {
+            this.isExploded = true;
+            createHeartFirework(
+                this.x,
+                this.y,
+                this.numParticles,
+                this.size,
+                this.color,
+                this.addText,
+                this.textContent
+            );
+        }
+
+        draw(ctx) {
+            if (!this.isExploded) {
+                // 绘制轨迹
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                ctx.strokeStyle = this.color;
+                ctx.beginPath();
+                for (let i = 0; i < this.trail.length - 1; i++) {
+                    ctx.moveTo(this.trail[i].x, this.trail[i].y);
+                    ctx.lineTo(this.trail[i + 1].x, this.trail[i + 1].y);
+                }
+                ctx.stroke();
+                ctx.restore();
+
+                // 绘制火箭
+                ctx.save();
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+    }
+
+    // 文本元素数组
+    const textElements = [];
+
+    // 粒子数组
     const particles = [];
-    const textElements = []; // 存储文本元素
+
+    // 火箭数组
+    const fireworks = [];
 
     // 生成正立心形路径的角度和距离
     function generateHeartAngles(num, size = 1) {
@@ -162,8 +241,16 @@
         const clickX = event.clientX - rect.left;
         const clickY = event.clientY - rect.top;
 
-        // 创建红色心型烟花，并添加“爱你”文本
-        createHeartFirework(clickX, clickY, 100, 1, 'red', true, '爱你');
+        // 创建一个火箭，目标高度为随机高度的下方（模拟从底部升起）
+        const targetY = clickY - (Math.random() * canvas.height / 2 + canvas.height / 4);
+        const fireworkColor = 'red'; // 可自定义颜色
+        const numParticles = 100;
+        const size = 1;
+        const addText = true;
+        const textContent = '爱你';
+
+        const fw = new Firework(clickX, clickY, targetY, fireworkColor, numParticles, size, addText, textContent);
+        fireworks.push(fw);
 
         // 可选：播放声音
         // if (fireworkSound) {
@@ -174,16 +261,23 @@
 
     // 自动释放烟花
     function autoFireworks() {
+        // const x = Math.random() * canvas.width * 0.8 + canvas.width * 0.1; // 避免边缘过近
+        // const y = canvas.height; // 从底部开始
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
+        const targetY = Math.random(); // 目标高度
         const numParticles = window.innerWidth < 768 ? 30 + Math.floor(Math.random() * 70) : 50 + Math.floor(Math.random() * 100); // 粒子数量基于设备
         const size = 0.5 + Math.random() * 1.5;
+        const color = null; // 随机颜色
+        const addText = 0; // 30%概率添加文本
+        const textContent = '';
 
-        createHeartFirework(x, y, numParticles, size);
+        const fw = new Firework(x, y, targetY, color, numParticles, size, addText, textContent);
+        fireworks.push(fw);
     }
 
     // 设置自动释放的时间间隔
-    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 3000 : 1000; // 移动设备每3秒，桌面每2秒
+    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 3000 : 1000; // 移动设备每3秒，桌面每1秒
     let autoFireworksInterval = setInterval(autoFireworks, FIREWORK_INTERVAL);
 
     // 监听窗口大小变化，动态调整自动释放间隔
@@ -198,6 +292,16 @@
         // 使用半透明黑色填充实现拖影效果
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 更新并绘制火箭
+        for (let i = fireworks.length - 1; i >= 0; i--) {
+            const fw = fireworks[i];
+            fw.update();
+            fw.draw(ctx);
+            if (fw.isExploded) {
+                fireworks.splice(i, 1);
+            }
+        }
 
         // 更新并绘制粒子
         for (let i = particles.length - 1; i >= 0; i--) {
