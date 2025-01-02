@@ -95,11 +95,12 @@
 
     // 火箭类
     class Firework {
-        constructor(x, y, targetY, color, numParticles, size, addText, textContent) {
+        constructor(x, y, targetY, shape, color, numParticles, size, addText, textContent) {
             this.x = x;
             this.y = y;
             this.targetY = targetY; // 爆炸高度
             this.vy = -Math.random() * 3 - 2; // 上升速度
+            this.shape = shape; // 烟花形状
             this.color = color;
             this.isExploded = false;
             this.numParticles = numParticles;
@@ -130,9 +131,10 @@
 
         explode() {
             this.isExploded = true;
-            createHeartFirework(
+            createShapeFirework(
                 this.x,
                 this.y,
+                this.shape,
                 this.numParticles,
                 this.size,
                 this.color,
@@ -195,22 +197,69 @@
         return angles;
     }
 
+    // 生成星形路径的角度和距离
+    function generateStarAngles(num, size = 1, points = 5) {
+        const angles = [];
+        const step = Math.PI / points;
+        for (let i = 0; i < num; i++) {
+            const t = i / num * 2 * Math.PI;
+            const radius = (i % 2 === 0) ? 16 : 8; // 外半径和内半径
+            const x = radius * Math.cos(t);
+            const y = radius * Math.sin(t);
+            const angle = Math.atan2(y, x);
+            const distance = Math.sqrt(x * x + y * y) * size;
+            angles.push({ angle: angle, distance: distance });
+        }
+        return angles;
+    }
+
+    // 生成花形路径的角度和距离
+    function generateFlowerAngles(num, size = 1, petals = 5) {
+        const angles = [];
+        for (let i = 0; i < num; i++) {
+            const t = (i / num) * Math.PI * 2;
+            // 花形方程，五瓣花
+            const r = 10 * Math.cos(petals * t) + 10;
+            const x = r * Math.cos(t);
+            const y = r * Math.sin(t);
+            const angle = Math.atan2(y, x);
+            const distance = Math.sqrt(x * x + y * y) * size;
+            angles.push({ angle: angle, distance: distance });
+        }
+        return angles;
+    }
+
     /**
-     * 生成并添加一个心型烟花
+     * 生成并添加一个指定形状的烟花
      * @param {number} x - 烟花中心的x坐标
      * @param {number} y - 烟花中心的y坐标
+     * @param {string} shape - 烟花形状（'heart', 'star', 'flower'）
      * @param {number} numParticles - 粒子数量
-     * @param {number} size - 心形大小
+     * @param {number} size - 形状大小
      * @param {string|null} color - 粒子颜色。若为null，则随机颜色
      * @param {boolean} addText - 是否在烟花中心添加文本
      * @param {string} [textContent='爱你'] - 文本内容（默认“爱你”）
      */
-    function createHeartFirework(x, y, numParticles = 100, size = 1, color = null, addText = false, textContent = '爱你') {
-        const heartAngles = generateHeartAngles(numParticles, size);
+    function createShapeFirework(x, y, shape, numParticles = 100, size = 1, color = null, addText = false, textContent = '爱你') {
+        let angles;
+        switch (shape) {
+            case 'heart':
+                angles = generateHeartAngles(numParticles, size);
+                break;
+            case 'star':
+                angles = generateStarAngles(numParticles, size);
+                break;
+            case 'flower':
+                angles = generateFlowerAngles(numParticles, size);
+                break;
+            default:
+                angles = generateHeartAngles(numParticles, size);
+        }
+
         // 若未指定颜色，则随机生成
         const fireworkColor = color || `hsl(${Math.random() * 360}, 100%, 50%)`;
 
-        heartAngles.forEach(({ angle, distance }) => {
+        angles.forEach(({ angle, distance }) => {
             const speed = distance * 0.1; // 调整速度因子以适应大小变化
             const p = new Particle(
                 x,
@@ -243,13 +292,17 @@
 
         // 创建一个火箭，目标高度为随机高度的下方（模拟从底部升起）
         const targetY = clickY - (Math.random() * canvas.height / 2 + canvas.height / 4);
+        
+        // 设置形状为心形
+        const shape = 'heart';
+
         const fireworkColor = 'red'; // 可自定义颜色
         const numParticles = 100;
         const size = 1;
         const addText = true;
         const textContent = '爱你';
 
-        const fw = new Firework(clickX, clickY, targetY, fireworkColor, numParticles, size, addText, textContent);
+        const fw = new Firework(clickX, clickY, targetY, shape, fireworkColor, numParticles, size, addText, textContent);
         fireworks.push(fw);
 
         // 可选：播放声音
@@ -261,29 +314,33 @@
 
     // 自动释放烟花
     function autoFireworks() {
-        // const x = Math.random() * canvas.width * 0.8 + canvas.width * 0.1; // 避免边缘过近
+        // const x = Math.random() * canvas.width;
         // const y = canvas.height; // 从底部开始
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
-        const targetY = Math.random(); // 目标高度
+        const targetY = Math.random() * canvas.height / 2; // 目标高度
         const numParticles = window.innerWidth < 768 ? 30 + Math.floor(Math.random() * 70) : 50 + Math.floor(Math.random() * 100); // 粒子数量基于设备
         const size = 0.5 + Math.random() * 1.5;
         const color = null; // 随机颜色
-        const addText = 0; // 30%概率添加文本
-        const textContent = '';
+        const addText = Math.random() < 0; // 30%概率添加文本
+        const textContent = '爱你';
 
-        const fw = new Firework(x, y, targetY, color, numParticles, size, addText, textContent);
+        // 随机选择形状
+        const shapes = ['heart', 'star', 'flower'];
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+
+        const fw = new Firework(x, y, targetY, shape, color, numParticles, size, addText, textContent);
         fireworks.push(fw);
     }
 
     // 设置自动释放的时间间隔
-    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 3000 : 1000; // 移动设备每3秒，桌面每1秒
+    const FIREWORK_INTERVAL = window.innerWidth < 768 ? 2000 : 1000; // 移动设备每3秒，桌面每1秒
     let autoFireworksInterval = setInterval(autoFireworks, FIREWORK_INTERVAL);
 
     // 监听窗口大小变化，动态调整自动释放间隔
     window.addEventListener('resize', function() {
         clearInterval(autoFireworksInterval);
-        const newInterval = window.innerWidth < 768 ? 3000 : 1000;
+        const newInterval = window.innerWidth < 768 ? 2000 : 500;
         autoFireworksInterval = setInterval(autoFireworks, newInterval);
     });
 
