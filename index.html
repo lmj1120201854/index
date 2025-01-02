@@ -237,11 +237,111 @@
         return angles;
     }
 
+    // 生成小猫头形状的角度和距离
+    function generateCatAngles(num, size = 1) {
+        const angles = [];
+        const faceParticles = Math.floor(num * 0.7);
+        const earParticles = Math.floor(num * 0.15);
+
+        // 生成脸部圆形粒子
+        for (let i = 0; i < faceParticles; i++) {
+            const t = (i / faceParticles) * 2 * Math.PI;
+            const radius = 16 * size;
+            const x = radius * Math.cos(t);
+            const y = radius * Math.sin(t);
+            // 翻转 Y 轴以确保形状正立
+            const flippedY = -y;
+            const angle = Math.atan2(flippedY, x);
+            const distance = Math.sqrt(x * x + flippedY * flippedY);
+            angles.push({ angle: angle, distance: distance });
+        }
+
+        // 生成左耳三角形粒子
+        for (let i = 0; i < earParticles; i++) {
+            const t = (i / earParticles) * (Math.PI / 2);
+            const radius = 8 * size;
+            // 左耳偏移
+            const x = radius * Math.cos(t) - 12 * size;
+            const y = radius * Math.sin(t) + 16 * size;
+            // 翻转 Y 轴
+            const flippedY = -y;
+            const angle = Math.atan2(flippedY, x);
+            const distance = Math.sqrt(x * x + flippedY * flippedY);
+            angles.push({ angle: angle, distance: distance });
+        }
+
+        // 生成右耳三角形粒子
+        for (let i = 0; i < earParticles; i++) {
+            const t = (i / earParticles) * (Math.PI / 2);
+            const radius = 8 * size;
+            // 右耳偏移
+            const x = radius * Math.cos(t) + 12 * size;
+            const y = radius * Math.sin(t) + 16 * size;
+            // 翻转 Y 轴
+            const flippedY = -y;
+            const angle = Math.atan2(flippedY, x);
+            const distance = Math.sqrt(x * x + flippedY * flippedY);
+            angles.push({ angle: angle, distance: distance });
+        }
+
+        return angles;
+    }
+
+    // 生成小狗头形状的角度和距离
+    function generateDogAngles(num, size = 1) {
+        const angles = [];
+        const faceParticles = Math.floor(num * 0.7);
+        const earParticles = Math.floor(num * 0.15);
+
+        // 生成脸部圆形粒子
+        for (let i = 0; i < faceParticles; i++) {
+            const t = (i / faceParticles) * 2 * Math.PI;
+            const radius = 16 * size;
+            const x = radius * Math.cos(t);
+            const y = radius * Math.sin(t);
+            // 翻转 Y 轴以确保形状正立
+            const flippedY = -y;
+            const angle = Math.atan2(flippedY, x);
+            const distance = Math.sqrt(x * x + flippedY * flippedY);
+            angles.push({ angle: angle, distance: distance });
+        }
+
+        // 生成左耳垂耳粒子
+        for (let i = 0; i < earParticles; i++) {
+            const t = (i / earParticles) * Math.PI;
+            const radius = 10 * size;
+            // 左耳偏移
+            const x = radius * Math.cos(t) - 10 * size;
+            const y = radius * Math.sin(t) + 16 * size;
+            // 翻转 Y 轴
+            const flippedY = -y;
+            const angle = Math.atan2(flippedY, x);
+            const distance = Math.sqrt(x * x + flippedY * flippedY);
+            angles.push({ angle: angle, distance: distance });
+        }
+
+        // 生成右耳垂耳粒子
+        for (let i = 0; i < earParticles; i++) {
+            const t = (i / earParticles) * Math.PI;
+            const radius = 10 * size;
+            // 右耳偏移
+            const x = radius * Math.cos(t) + 10 * size;
+            const y = radius * Math.sin(t) + 16 * size;
+            // 翻转 Y 轴
+            const flippedY = -y;
+            const angle = Math.atan2(flippedY, x);
+            const distance = Math.sqrt(x * x + flippedY * flippedY);
+            angles.push({ angle: angle, distance: distance });
+        }
+
+        return angles;
+    }
+
     /**
      * 生成并添加一个指定形状的烟花
      * @param {number} x - 烟花中心的x坐标
      * @param {number} y - 烟花中心的y坐标
-     * @param {string} shape - 烟花形状（'heart', 'star', 'flower'）
+     * @param {string} shape - 烟花形状（'heart', 'star', 'flower', 'cat', 'dog'）
      * @param {number} numParticles - 粒子数量
      * @param {number} size - 形状大小
      * @param {string|null} color - 粒子颜色。若为null，则随机颜色
@@ -259,6 +359,12 @@
                 break;
             case 'flower':
                 angles = generateFlowerAngles(numParticles, size);
+                break;
+            case 'cat':
+                angles = generateCatAngles(numParticles, size);
+                break;
+            case 'dog':
+                angles = generateDogAngles(numParticles, size);
                 break;
             default:
                 angles = generateHeartAngles(numParticles, size);
@@ -301,8 +407,9 @@
         // 创建一个火箭，目标高度为随机高度的下方（模拟从底部升起）
         const targetY = clickY - (Math.random() * canvas.height / 2 + canvas.height / 4);
         
-        // 设置形状为心形
-        const shape = 'heart';
+        // 随机选择形状，包括新增的'cat'和'dog'
+        const shapes = ['heart', 'star', 'flower', 'cat', 'dog'];
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
 
         const fireworkColor = 'red'; // 可自定义颜色
         const numParticles = 100;
@@ -328,11 +435,11 @@
         const numParticles = window.innerWidth < 768 ? 30 + Math.floor(Math.random() * 70) : 50 + Math.floor(Math.random() * 100); // 粒子数量基于设备
         const size = 0.5 + Math.random() * 1.5;
         const color = null; // 随机颜色
-        const addText = Math.random() < 0.0; // 30%概率添加文本
+        const addText = Math.random() < 0.3; // 30%概率添加文本
         const textContent = addText ? getRandomBlessing() : '爱你'; // 如果添加文本，随机选择祝福语；否则默认“爱你”
 
-        // 随机选择形状
-        const shapes = ['heart', 'star', 'flower'];
+        // 随机选择形状，包括新增的'cat'和'dog'
+        const shapes = ['heart', 'star', 'flower', 'cat', 'dog'];
         const shape = shapes[Math.floor(Math.random() * shapes.length)];
 
         const fw = new Firework(x, y, targetY, shape, color, numParticles, size, addText, textContent);
