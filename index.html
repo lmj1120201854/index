@@ -435,7 +435,7 @@
         const numParticles = window.innerWidth < 768 ? 30 + Math.floor(Math.random() * 70) : 50 + Math.floor(Math.random() * 100); // 粒子数量基于设备
         const size = 0.5 + Math.random() * 1.5;
         const color = null; // 随机颜色
-        const addText = Math.random() < 0.3; // 30%概率添加文本
+        const addText = Math.random() < 0.0; // 30%概率添加文本
         const textContent = addText ? getRandomBlessing() : '爱你'; // 如果添加文本，随机选择祝福语；否则默认“爱你”
 
         // 随机选择形状，包括新增的'cat'和'dog'
